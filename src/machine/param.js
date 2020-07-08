@@ -1,5 +1,6 @@
 const { createMachine, state, transition, interpret, action, reduce, immediate, guard, invoke } = require('robot3');
 const { EVENT } = require('../constant');
+const { capitalize } = require('../utils');
 
 function hey(...args) {
     return action((ctx) => { console.log('hey', ...args) });
@@ -27,63 +28,63 @@ const machine = createMachine({
     handle: state(
         transition(EVENT.OPEN_TR, 'handle',
             reduce((ctx) => {
-                ctx.params.push([]);
+                ctx.pending.push([]);
                 return ctx;
             }),
         ),
         transition(EVENT.OPEN_TD, 'handle',
             reduce((ctx) => {
-                const params = ctx.params;
-                params[params.length - 1].push('');
-                return ctx;
-            }),
-        ),
-        transition(EVENT.FIND_PLAIN_TEXT, 'type_object',
-            guard((ctx, ev) => {
-                const param = ctx.params.top();
-                return param.length == 2 && param[1] === '' && ev.value == 'Object';
-            }),
-            reduce((ctx) => {
-                ctx.interface = [];
+                ctx.plain_text_buf = '';
                 return ctx;
             }),
         ),
         transition(EVENT.FIND_PLAIN_TEXT, 'handle',
             reduce((ctx, ev) => {
                 const text = ev.value;
-                if (text == '&nbsp;') {
-                    return ctx;
+                const definition = ctx.definition.top();
+                if (text !== '&nbsp;') {
+                    ctx.plain_text_buf += ev.value;
                 }
-                const param = ctx.params.top();
-                param[param.length - 1] += ev.value;
+
+                const pending = ctx.pending.top();
+                if (pending.length == 1 && ev.value == 'Object') {
+                    const interface_name = capitalize(definition.method_name) + capitalize(pending[0]);
+                    ctx.interface.push({
+                        name: interface_name,
+                        properties: [],
+                    });
+                }
+
+                return ctx;
+            }),
+        ),
+        transition(EVENT.CLOSE_TD, 'handle',
+            reduce((ctx, ev) => {
+                ctx.pending.top().push(ctx.plain_text_buf);
+                ctx.plain_text_buf = '';
+                return ctx;
+            }),
+        ),
+        transition(EVENT.CLOSE_TR, 'handle',
+            reduce((ctx, ev) => {
+                const pending = ctx.pending.pop();
+                if (pending[0].indexOf('.') >= 0) {
+                    pending[0] = pending[0].split('.').pop();
+                    ctx.interface.top().properties.push(pending);
+                } else {
+                    hey(pending[1]);
+                    if (pending[1] == 'Object') {
+                        pending[1] = ctx.interface.top().name;
+                    }
+                    ctx.params.push(pending);   
+                }
                 return ctx;
             }),
         ),
         transition(EVENT.CLOSE_TABLE, 'finish'),
     ),
-    type_object: state(
-        immediate('finish', hey('1')),
-        transition(EVENT.OPEN_TR, 'type_object',
-            reduce((ctx) => {
-                ctx.interface.push([]);
-                return ctx;
-            }),
-        ),
-        transition(EVENT.OPEN_TD, 'handle',
-            reduce((ctx) => {
-                ctx.interface.push([]);
-                return ctx;
-            }),
-        ),
-        transition(EVENT.OPEN_TR, 'handle',
-            reduce((ctx) => {
-                ctx.params.push([]);
-                return ctx;
-            }),
-        ),
-    ),
     finish: state(),
-}, (ctx) => ctx);
+}, (ctx) => ({ ...ctx, pending: [], interface: [] }));
 
 module.exports = exports = {
     machine,

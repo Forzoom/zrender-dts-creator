@@ -16,6 +16,14 @@ Array.prototype.top = function() {
 // 使用robot
 const service = interpret(machine, service => {}, {});
 
+// 关键字
+const keywords = {
+    '参数': EVENT.FIND_PARAM_WORD,
+    '返回值': EVENT.FIND_RETURN_WORD,
+    '相关': EVENT.FIND_RELATIVE_WORD,
+    '构造函数': EVENT.FIND_CONSTRUCTOR_WORD,
+};
+
 function send(...args) {
     service.send(...args);
     if (service.child) {
@@ -44,16 +52,8 @@ async function main() {
                 return;
             }
 
-            if (attribes.id === '参数') {
-                send(EVENT.FIND_PARAM_WORD);
-                return;
-            }
-            if (attribes.id === '返回值') {
-                send(EVENT.FIND_RETURN_WORD);
-                return;
-            }
-            if (attribes.id === '相关') {
-                send(EVENT.FIND_RELATIVE_WORD);
+            if (keywords[attribes.id]) {
+                send(keywords[attribes.id]);
                 return;
             }
 
@@ -67,11 +67,8 @@ async function main() {
             return;
         },
         ontext(text) {
-            if (/^[a-zA-Z.]*\([a-z, ]*\)$/.test(text)) {
-                send({
-                    type: EVENT.FIND_METHOD_LIKE,
-                    value: text,
-                });
+            if (keywords[text]) {
+                send(keywords[text]);
                 return;
             }
 
@@ -174,11 +171,16 @@ async function main() {
 <h4 id="相关">相关</h4>
 <p><a href="#zrenderdisposezr">zrender.dispose</a>。</p>
 <h3 id="zrenderversion">zrender.version<a href="#zrenderversion" class="api-anchor">#</a></h3>
+<p>类型：<code class="highlighter-rouge">'string'</code>，ZRender 版本号。</p>
+<h3 id="zrenderanimatable">zrender.Animatable<a href="#zrenderanimatable" class="api-anchor">#</a></h3>
+<p>支持动画的对象。</p>
+<h4 id="构造函数">构造函数</h4>
+<p><code class="highlighter-rouge">zrender.Animatable()</code></p>
 </div>`)
     parser.end();
 
     console.log(service, util.inspect(service.context.definition, {
-        depth: 6,
+        depth: 3,
     }));
 }
 

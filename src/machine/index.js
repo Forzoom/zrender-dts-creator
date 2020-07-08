@@ -17,13 +17,38 @@ const machine = createMachine({
         ),
     ),
     define: state(
-        transition(EVENT.FIND_METHOD_LIKE, 'method',
+        transition(EVENT.FIND_PLAIN_TEXT, 'method',
+            guard((ctx, ev) => {
+                return /^[a-zA-Z.]*\([a-z, ]*\)$/.test(ev.value);
+            }),
             reduce((ctx, ev) => {
                 const top = ctx.definition.top();
                 top.type = 'method';
                 top.raw_name = ev.value;
                 const name = ev.value.split('.').pop();
                 top.method_name = name.substr(0, name.indexOf('('));
+                return ctx;
+            }),
+        ),
+        transition(EVENT.FIND_PLAIN_TEXT, 'class',
+            guard((ctx, ev) => {
+                return /^([a-zA-Z]*.)*[A-Z][a-z, ]*$/.test(ev.value);
+            }),
+            reduce((ctx, ev) => {
+                const top = ctx.definition.top();
+                top.type = 'class';
+                top.raw_name = ev.value;
+                return ctx;
+            }),
+        ),
+        transition(EVENT.FIND_PLAIN_TEXT, 'property',
+            guard((ctx, ev) => {
+                return /^[a-zA-Z.]*[a-z, ]*$/.test(ev.value);
+            }),
+            reduce((ctx, ev) => {
+                const top = ctx.definition.top();
+                top.type = 'property';
+                top.raw_name = ev.value;
                 return ctx;
             }),
         ),
@@ -37,6 +62,20 @@ const machine = createMachine({
             }),
         ),
     ),
+    property: state(
+        transition(EVENT.OPEN_CODE, 'property_desc'),
+    ),
+    property_desc: state(
+        transition(EVENT.FIND_PLAIN_TEXT, 'property_desc',
+            guard((ctx, ev) => !ctx.definition.top().property_type),
+            reduce((ctx, ev) => {
+                ctx.definition.top().property_type = ev.value;
+                return ctx;
+            }),
+        ),
+        transition(EVENT.CLOSE_P, 'prepared'),
+    ),
+    class: state(),
     param: invoke(paramMachine,
         transition('done', 'return',
             reduce((ctx, ev) => {
@@ -47,15 +86,18 @@ const machine = createMachine({
                 if (ev.data.comment) {
                     top.comment = ev.data.comment;
                 }
+                if (ev.data.interface) {
+                    top.interface = ev.data.interface;
+                }
                 return ctx;
             }),
         )
     ),
     return: state(
-        transition(EVENT.OPEN_CODE, 'return_value')
+        transition(EVENT.OPEN_CODE, 'return_desc')
     ),
-    return_value: state(
-        transition(EVENT.FIND_PLAIN_TEXT, 'return_value',
+    return_desc: state(
+        transition(EVENT.FIND_PLAIN_TEXT, 'return_desc',
             guard((ctx, ev) => !ctx.definition.top().return),
             reduce((ctx, ev) => {
                 ctx.definition.top().return = ev.value;

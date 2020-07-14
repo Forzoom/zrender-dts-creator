@@ -18,17 +18,12 @@ const machine = createMachine({
         transition(EVENT.OPEN_TABLE, 'start'),
     ),
     start: state(
-        transition(EVENT.OPEN_TBODY, 'handle',
-            reduce((ctx) => {
-                ctx.params = [];
-                return ctx;
-            }),
-        ),
+        transition(EVENT.OPEN_TBODY, 'handle'),
     ),
     handle: state(
         transition(EVENT.OPEN_TR, 'handle',
             reduce((ctx) => {
-                ctx.pending.push([]);
+                ctx._pending.push([]);
                 return ctx;
             }),
         ),
@@ -41,14 +36,14 @@ const machine = createMachine({
         transition(EVENT.FIND_PLAIN_TEXT, 'handle',
             reduce((ctx, ev) => {
                 const text = ev.value;
-                const definition = ctx.definition.top();
+                const def = ctx.stack.top();
                 if (text !== '&nbsp;') {
                     ctx.plain_text_buf += ev.value;
                 }
 
-                const pending = ctx.pending.top();
+                const pending = ctx._pending.top();
                 if (pending.length == 1 && ev.value == 'Object') {
-                    const interface_name = capitalize(definition.method_name) + capitalize(pending[0]);
+                    const interface_name = capitalize(def.method_name) + capitalize(pending[0]);
                     ctx.interface.push({
                         name: interface_name,
                         properties: [],
@@ -60,14 +55,14 @@ const machine = createMachine({
         ),
         transition(EVENT.CLOSE_TD, 'handle',
             reduce((ctx, ev) => {
-                ctx.pending.top().push(ctx.plain_text_buf);
+                ctx._pending.top().push(ctx.plain_text_buf);
                 ctx.plain_text_buf = '';
                 return ctx;
             }),
         ),
         transition(EVENT.CLOSE_TR, 'handle',
             reduce((ctx, ev) => {
-                const pending = ctx.pending.pop();
+                const pending = ctx._pending.pop();
                 if (pending[0].indexOf('.') >= 0) {
                     pending[0] = pending[0].split('.').pop();
                     ctx.interface.top().properties.push(pending);
@@ -84,7 +79,17 @@ const machine = createMachine({
         transition(EVENT.CLOSE_TABLE, 'finish'),
     ),
     finish: state(),
-}, (ctx) => ({ ...ctx, pending: [], interface: [] }));
+}, (ctx) => {
+    /**
+     * 将返回的数据
+     * 
+     * params: 记录参数
+     * interface: 记录生成的interface
+     * comment: 可能偶尔有文档错误，导致method的comment写到了参数里面
+     * _pending: 用于临时记录参数信息
+     */
+    return { ...ctx, params: [], interface: [], _pending: [], comment: null };
+});
 
 module.exports = exports = {
     machine,

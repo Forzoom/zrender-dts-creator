@@ -5,6 +5,7 @@
   "license": "MIT",
   "dependencies": {
     "axios": "^0.19.2",
+    "debug": "^4.1.1",
     "htmlparser2": "^4.1.0",
     "recast": "^0.19.1",
     "robot3": "^0.2.18"

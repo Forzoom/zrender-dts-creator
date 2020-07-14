@@ -1,11 +1,18 @@
 exports.EVENT = {
     START: 'start',
+    END: 'end',
+
     FIND_METHOD_LIKE: 'find_method_like',
+
     FIND_PARAM_WORD: 'find_param_word',
     FIND_RETURN_WORD: 'find_return_word',
     FIND_RELATIVE_WORD: 'find_relative_word',
     FIND_CONSTRUCTOR_WORD: 'find_constructor_word',
+    FIND_EXAMPLE_WORD: 'find_example_word',
+
     FIND_PLAIN_TEXT: 'find_plain_text',
+    OPEN_A: 'open_a',
+    CLOSE_A: 'close_a',
     OPEN_H: 'open_h',
     OPEN_P: 'open_p',
     CLOSE_P: 'close_p',
@@ -17,4 +24,5 @@ exports.EVENT = {
     OPEN_TD: 'open_td',
     CLOSE_TD: 'close_td',
     OPEN_CODE: 'open_code',
+    CLOSE_CODE: 'close_code',
 };

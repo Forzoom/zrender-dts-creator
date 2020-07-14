@@ -6,6 +6,7 @@ const { machine } = require('./machine');
 const recast = require('recast');
 const { EVENT } = require('./constant');
 const util = require('util');
+const debug = require('debug')('parser');
 const FILE_PATH = './assets/api.html';
 const definition = [];
 
@@ -22,13 +23,27 @@ const keywords = {
     '返回值': EVENT.FIND_RETURN_WORD,
     '相关': EVENT.FIND_RELATIVE_WORD,
     '构造函数': EVENT.FIND_CONSTRUCTOR_WORD,
+    '例子': EVENT.FIND_EXAMPLE_WORD,
 };
 
+/** 发送 */
 function send(...args) {
-    service.send(...args);
     if (service.child) {
-        service.child.send(...args);
+        if (service.child.child) {
+            service.child.child.send(...args);
+        } else {
+            service.child.send(...args);
+        }
+    } else {
+        service.send(...args);
     }
+}
+
+/** 发送end */
+function end() {
+    send(EVENT.END);
+    send(EVENT.END);
+    send(EVENT.END);
 }
 
 async function main() {
@@ -47,14 +62,23 @@ async function main() {
     // 使用parser
     const parser = new htmlparser2.Parser({
         onopentag(tagName, attribes) {
+            debug('onopentag');
             if (attribes.class === 'api-content') {
                 send(EVENT.START);
                 return;
             }
 
-            if (keywords[attribes.id]) {
-                send(keywords[attribes.id]);
-                return;
+            let id = attribes.id;
+            if (id) {
+                const pos = id.indexOf('-');
+                if (pos >= 0) {
+                    id = id.substr(0, pos);
+                }
+
+                if (keywords[id]) {
+                    send(keywords[id]);
+                    return;
+                }
             }
 
             if (/^h[3-6]$/.test(tagName)) {
@@ -67,23 +91,32 @@ async function main() {
             return;
         },
         ontext(text) {
+            debug('ontext', text);
             if (keywords[text]) {
+                debug('ontext1');
                 send(keywords[text]);
                 return;
             }
 
             if (!/^\s*$/.test(text)) {
+                debug('ontext2');
                 send({
                     type: EVENT.FIND_PLAIN_TEXT,
                     value: text,
                 });
                 return;
             }
+            debug('ontext3');
         },
         onclosetag(tagName) {
+            debug('onclosetag');
             // close_tagName
             send(`close_${tagName}`);
             return;
+        },
+        onend() {
+            debug('end');
+            end();
         },
     });
 
@@ -176,11 +209,156 @@ async function main() {
 <p>支持动画的对象。</p>
 <h4 id="构造函数">构造函数</h4>
 <p><code class="highlighter-rouge">zrender.Animatable()</code></p>
+<h3 id="zrenderanimatableanimatepath-loop">zrender.Animatable.animate(path, loop)<a href="#zrenderanimatableanimatepath-loop" class="api-anchor">#</a></h3>
+<p>创建一个动画对象。动画不会立即开始，如需立即开始，需调用 <a href=""><code class="highlighter-rouge">zrender.Animator.start</code></a>。</p>
+<h4 id="参数">参数</h4>
+<table class="table">
+  <thead>
+    <tr>
+      <th>名称</th>
+      <th>类型</th>
+      <th>默认值</th>
+      <th>描述</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>path</td>
+      <td><code class="highlighter-rouge">string</code></td>
+      <td>&nbsp;</td>
+      <td>对该对象的哪个元素执行动画，如 <code class="highlighter-rouge">xxx.animate('a.b', true)</code> 表示对 <code class="highlighter-rouge">xxx.a.b</code> （可能是一个 <code class="highlighter-rouge">Object</code> 类型）执行动画。</td>
+    </tr>
+    <tr>
+      <td>loop</td>
+      <td><code class="highlighter-rouge">boolean</code></td>
+      <td><code class="highlighter-rouge">false</code></td>
+      <td>是否循环动画。</td>
+    </tr>
+  </tbody>
+</table>
+<h4 id="返回值">返回值</h4>
+<p>动画对象，类型：<a href="#zrenderanimator">Animator</a>。</p>
+<h4 id="例子">例子</h4>
+<div class="language-js highlighter-rouge"><pre class="highlight"><code><span class="nx">el</span><span class="p">.</span><span class="nx">animate</span><span class="p">(</span><span class="s1">'style'</span><span class="p">,</span> <span class="kc">false</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="p">{</span><span class="na">x</span><span class="p">:</span> <span class="mi">10</span><span class="p">})</span>
+    <span class="p">.</span><span class="nx">done</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+         <span class="c1">// Animation done</span>
+    <span class="p">})</span>
+    <span class="p">.</span><span class="nx">start</span><span class="p">()</span>
+</code></pre>
+</div>
+<h3 id="zrenderanimatableanimatetotarget-time-delay-easing-callback-forceanimate">zrender.Animatable.animateTo(target, time, delay, easing, callback, forceAnimate)<a href="#zrenderanimatableanimatetotarget-time-delay-easing-callback-forceanimate" class="api-anchor">#</a></h3>
+<p>为属性设置动画。</p>
+<p>部分参数可缺省，支持以下形式的调用：</p>
+<ul>
+  <li>animateTo(target, time, delay, easing, callback, forceAnimate)</li>
+  <li>animateTo(target, time, delay, easing, callback)</li>
+  <li>animateTo(target, time, easing, callback)</li>
+  <li>animateTo(target, time, delay, callback)</li>
+  <li>animateTo(target, time, callback)</li>
+  <li>animateTo(target, callback)</li>
+  <li>animateTo(target)</li>
+</ul>
+<h4 id="参数-1">参数</h4>
+<table class="table">
+  <thead>
+    <tr>
+      <th>名称</th>
+      <th>类型</th>
+      <th>默认值</th>
+      <th>描述</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>target</td>
+      <td><code class="highlighter-rouge">Object</code></td>
+      <td>&nbsp;</td>
+      <td>设置动画的对象，应为 <code class="highlighter-rouge">this</code> 的属性。</td>
+    </tr>
+    <tr>
+      <td>time</td>
+      <td><code class="highlighter-rouge">number</code></td>
+      <td><code class="highlighter-rouge">500</code></td>
+      <td>动画时长，单位毫秒。</td>
+    </tr>
+    <tr>
+      <td>delay</td>
+      <td><code class="highlighter-rouge">number</code></td>
+      <td><code class="highlighter-rouge">0</code></td>
+      <td>动画延迟执行的时长，单位毫秒。</td>
+    </tr>
+    <tr>
+      <td>easing</td>
+      <td><code class="highlighter-rouge">string</code></td>
+      <td><code class="highlighter-rouge">'linear'</code></td>
+      <td>缓动函数名称，支持的名称参见<a href="http://echarts.baidu.com/gallery/editor.html?c=line-easing">缓动函数</a>。</td>
+    </tr>
+    <tr>
+      <td>callback</td>
+      <td><code class="highlighter-rouge">Function</code></td>
+      <td>&nbsp;</td>
+      <td>动画执行完成后的回调函数。</td>
+    </tr>
+    <tr>
+      <td>forceAnimate</td>
+      <td><code class="highlighter-rouge">boolean</code></td>
+      <td><code class="highlighter-rouge">false</code></td>
+      <td>对于相同的属性，是否强制执行（也就是不直接结束动画）。</td>
+    </tr>
+  </tbody>
+</table>
+<h4 id="例子-1">例子</h4>
+<div class="language-js highlighter-rouge"><pre class="highlight"><code><span class="c1">// Animate position</span>
+<span class="nx">el</span><span class="p">.</span><span class="nx">animateTo</span><span class="p">({</span>
+    <span class="na">position</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+<span class="p">},</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// done</span>
+<span class="p">});</span>
+
+<span class="c1">// Animate shape, style and position in 100ms, delayed 100ms,</span>
+<span class="c1">// with cubicOut easing</span>
+<span class="nx">el</span><span class="p">.</span><span class="nx">animateTo</span><span class="p">({</span>
+    <span class="na">shape</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">width</span><span class="p">:</span> <span class="mi">500</span>
+    <span class="p">},</span>
+    <span class="na">style</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">fill</span><span class="p">:</span> <span class="s1">'red'</span>
+    <span class="p">}</span>
+    <span class="nl">position</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span>
+<span class="p">},</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="s1">'cubicOut'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// done</span>
+<span class="p">});</span>
+</code></pre>
+</div>
+<h3 id="zrenderanimatablestopanimationforwardtolast">zrender.Animatable.stopAnimation(forwardToLast)<a href="#zrenderanimatablestopanimationforwardtolast" class="api-anchor">#</a></h3>
+<p>停止动画。</p>
+<h4 id="参数-2">参数</h4>
+<table class="table">
+  <thead>
+    <tr>
+      <th>名称</th>
+      <th>类型</th>
+      <th>默认值</th>
+      <th>描述</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>forwardToLast</td>
+      <td><code class="highlighter-rouge">boolean</code></td>
+      <td><code class="highlighter-rouge">false</code></td>
+      <td>是否将动画跳到最后一帧。</td>
+    </tr>
+  </tbody>
+</table>
+<h4 id="返回值-1">返回值</h4>
+<p><code class="highlighter-rouge">this</code>。</p>
 </div>`)
     parser.end();
 
-    console.log(service, util.inspect(service.context.definition, {
-        depth: 3,
+    console.log(service, util.inspect(service.context, {
+        depth: 6,
     }));
 }
 

@@ -9,6 +9,7 @@ exports.EVENT = {
     FIND_RELATIVE_WORD: 'find_relative_word',
     FIND_CONSTRUCTOR_WORD: 'find_constructor_word',
     FIND_EXAMPLE_WORD: 'find_example_word',
+    FIND_STATIC_CLASS_WORD: 'find_static_class_word',
 
     FIND_PLAIN_TEXT: 'find_plain_text',
     OPEN_A: 'open_a',

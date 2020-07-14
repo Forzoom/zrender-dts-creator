@@ -1,0 +1,1 @@
+1. [] 处理params中未定义Object的情况下需要定义interface

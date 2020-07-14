@@ -15,9 +15,7 @@ const machine = createMachine({
                 return ctx;
             }),
         ),
-        transition(EVENT.OPEN_TABLE, 'start'),
-    ),
-    start: state(
+        // 这里不使用open_table，而使用open_tbody
         transition(EVENT.OPEN_TBODY, 'handle'),
     ),
     handle: state(
@@ -62,6 +60,7 @@ const machine = createMachine({
         ),
         transition(EVENT.CLOSE_TR, 'handle',
             reduce((ctx, ev) => {
+                console.log(ctx._pending);
                 const pending = ctx._pending.pop();
                 if (pending[0].indexOf('.') >= 0) {
                     pending[0] = pending[0].split('.').pop();

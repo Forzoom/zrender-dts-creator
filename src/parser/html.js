@@ -1,29 +1,29 @@
+const debug = require('debug')('html-parser');
+const { EVENT, keywords } = require('../constant');
 const htmlparser2 = require('htmlparser2');
-const fs = require('fs');
-const axios = require('axios');
-const { interpret } = require('robot3');
-const { machine } = require('./machine');
-const recast = require('recast');
-const { EVENT, keywords } = require('./constant');
-const util = require('util');
-const debug = require('debug')('parser');
-const FILE_PATH = './assets/api.html';
-const definition = [];
 
-// 使用robot
-const service = interpret(machine, service => {}, {});
+module.exports.create = function(service) {
+    /** 发送 */
+    function send(...args) {
+        let sender = service;
+        while (sender.child) {
+            sender = sender.child;
+        }
+        sender.send(...args);
+    }
 
-async function main() {
-    const exist = fs.existsSync(FILE_PATH);
-    let content = null;
+    /** 发送end */
+    function end() {
+        let sender = service;
+        const senders = [sender];
+        while (sender.child) {
+            sender = sender.child;
+            senders.unshift(sender);
+        }
 
-    // 获取网站内容
-    if (!exist) {
-        const response = await axios.get('https://ecomfe.github.io/zrender-doc/public/api.html');
-        content = response.data;
-        fs.writeFileSync(FILE_PATH, content);
-    } else {
-        content = fs.readFileSync(FILE_PATH);
+        for (const sender of senders) {
+            sender.send(EVENT.END);
+        }
     }
 
     // 使用parser
@@ -87,12 +87,9 @@ async function main() {
         },
     });
 
-    parser.write(content);
-    parser.end();
-
-    console.log(service, util.inspect(service.context, {
-        depth: 6,
-    }));
+    return {
+        send,
+        end,
+        parser,
+    };
 }
-
-main();

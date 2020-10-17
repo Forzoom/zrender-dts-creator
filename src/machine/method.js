@@ -18,6 +18,8 @@ const machine = createMachine({
         transition('done', 'prepared',
             reduce((ctx, ev) => {
                 const top = ctx.stack.top();
+                // ev.type === 'done', ev.data实际上是完整的context
+                console.log('target13', ev);
                 const { params, interface, comment } = ev.data;
                 if (params) {
                     top.params = params;

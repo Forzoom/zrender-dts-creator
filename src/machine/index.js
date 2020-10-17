@@ -1,6 +1,5 @@
 const { createMachine, state, transition, interpret, action, reduce, immediate, guard, invoke } = require('robot3');
 const { EVENT } = require('../constant');
-const { machine: paramMachine } = require('./param');
 const { machine: methodMachine } = require('./method');
 const { machine: classMachine } = require('./clazz');
 const debug = require('debug')('machine:index');
@@ -48,6 +47,7 @@ const machine = createMachine({
                 ctx.stack.push({
                     type: 'class',
                     raw_name: ev.value,
+                    class_name: ev.value.split('.').pop(),
                     methods: [],
                 });
                 return ctx;

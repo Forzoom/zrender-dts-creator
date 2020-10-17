@@ -1,4 +1,8 @@
-exports.EVENT = {
+Array.prototype.top = function() {
+    return this.length ? this[this.length - 1] : undefined;
+}
+
+const EVENT = exports.EVENT = {
     START: 'start',
     END: 'end',
 
@@ -26,4 +30,14 @@ exports.EVENT = {
     CLOSE_TD: 'close_td',
     OPEN_CODE: 'open_code',
     CLOSE_CODE: 'close_code',
+};
+
+// 关键字
+exports.keywords = {
+    '参数': EVENT.FIND_PARAM_WORD,
+    '返回值': EVENT.FIND_RETURN_WORD,
+    '相关': EVENT.FIND_RELATIVE_WORD,
+    '构造函数': EVENT.FIND_CONSTRUCTOR_WORD,
+    '例子': EVENT.FIND_EXAMPLE_WORD,
+    '静态类': EVENT.FIND_STATIC_CLASS_WORD,
 };

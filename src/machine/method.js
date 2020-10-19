@@ -10,6 +10,7 @@ const machine = createMachine({
         transition(EVENT.FIND_PARAM_WORD, 'param'),
         transition(EVENT.FIND_RETURN_WORD, 'return'),
         transition(EVENT.FIND_EXAMPLE_WORD, 'example'),
+        // 因为目前暂时没有明确的结束事件
         transition(EVENT.OPEN_H, 'finish'),
         transition(EVENT.END, 'finish'),
     ),
@@ -17,24 +18,16 @@ const machine = createMachine({
     param: invoke(paramMachine,
         transition('done', 'prepared',
             reduce((ctx, ev) => {
-                const top = ctx.stack.top();
+                // const top = ctx.stack.top();
                 // ev.type === 'done', ev.data实际上是完整的context
                 console.log('target13', ev);
-                const { params, interface, comment } = ev.data;
+                const { params, comment } = ev.data;
                 if (params) {
-                    top.params = params;
-                }
-                if (interface) {
-                    top.interface = interface;
+                    ctx.params = params;
                 }
                 if (comment) {
-                    top.comment = comment;
+                    ctx.comment = comment;
                 }
-                // 使用完成后将ctx中的数据删除
-                ctx.params = [];
-                ctx.interface = [];
-                ctx._pending = [];
-                ctx.comment = null;
                 return ctx;
             }),
         ),
@@ -46,9 +39,9 @@ const machine = createMachine({
     ),
     return_detail: state(
         transition(EVENT.FIND_PLAIN_TEXT, 'return_detail',
-            guard((ctx, ev) => !ctx.stack.top().return),
+            guard((ctx, ev) => !ctx.return),
             reduce((ctx, ev) => {
-                ctx.stack.top().return = ev.value;
+                ctx.return = ev.value;
                 return ctx;
             }),
         ),
@@ -61,11 +54,10 @@ const machine = createMachine({
     example_detail: state(
         transition(EVENT.FIND_PLAIN_TEXT, 'example_detail',
             reduce((ctx, ev) => {
-                const top = ctx.stack.top();
-                if (!top.example) {
-                    top.example = ev.value;
+                if (!ctx.example) {
+                    ctx.example = ev.value;
                 } else {
-                    top.example += ev.value;
+                    ctx.example += ev.value;
                 }
                 return ctx;
             }),
@@ -76,8 +68,11 @@ const machine = createMachine({
     finish: state(),
 }, (ctx) => {
     return {
-        // 回味ctx.stack.top()提供params/example/return/interface等可能的内容
         ...ctx,
+        params: null,
+        comment: null,
+        return: null,
+        example: '',
     };
 });
 

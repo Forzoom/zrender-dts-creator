@@ -8,7 +8,7 @@ describe('param machine', function() {
     it('basic', function() {
         // 使用robot
         const service = interpret(machine, service => {}, {});
-        console.log(service);
+        // console.log(service);
         const { parser } = create(service);
         parser.write(`
         <table>
@@ -19,8 +19,14 @@ describe('param machine', function() {
         </table>`);
         parser.end();
 
-        console.log(service, util.inspect(service.context, {
-            depth: 6,
-        }));
+        const params = service.context.params;
+        expect(params.length).to.equal(1);
+        expect(params[0][0]).to.equal('foo');
+        expect(params[0][1].bar.__name).to.equal('bar');
+        expect(params[0][1].baz.__name).to.equal('baz');
+
+        // console.log(util.inspect(service.context, {
+        //     depth: 6,
+        // }));
     });
 });

@@ -4,20 +4,18 @@ const { capitalize } = require('../utils');
 const { machineFactory: collectTextMachineFactory } = require('./collect_text');
 const { parseParam } = require('../parser/index');
 
-function hey(...args) {
-    return action((ctx) => { console.log('hey', ...args) });
-}
-
 const machine = createMachine({
-    prepared: state(
+    before: state(
         // 某些位置将函数的说明写在了"参数"之后
-        transition(EVENT.FIND_PLAIN_TEXT, 'prepared',
+        transition(EVENT.FIND_PLAIN_TEXT, 'before',
             reduce((ctx, ev) => {
                 ctx.comment = ev.value;
                 return ctx;
             }),
         ),
-        // 这里不使用open_table，而使用open_tbody
+        transition(EVENT.OPEN_TABLE, 'prepared'),
+    ),
+    prepared: state(
         transition(EVENT.OPEN_TBODY, 'handle'),
     ),
     collect_text: invoke(collectTextMachineFactory(EVENT.CLOSE_TD),
@@ -50,9 +48,23 @@ const machine = createMachine({
                 const parsed = {};
 
                 for (const param of params) {
-                    console.log(ctx.params, parsed);
                     parseParam(param, parsed);
+                    // console.log(parsed);
                 }
+
+                const result = [];
+                const cache = {};
+                for (const param of params) {
+                    const keyPath = param[0].split('.');
+                    if (keyPath.length === 1) {
+                        result.push(param);
+                    } else if (!cache[keyPath[0]]) {
+                        result.push([ keyPath[0], parsed[keyPath[0]], '', '' ]);
+                        cache[keyPath[0]] = true;
+                    }
+                }
+
+                ctx.params = result;
 
                 // const def = ctx.stack.top();
 
@@ -106,6 +118,7 @@ const machine = createMachine({
                 //         console.log('target3', ctx.stack.top());
                 //     }
                 // }
+                console.log('before');
                 return ctx;
             }),
         ),
@@ -116,9 +129,7 @@ const machine = createMachine({
      * 将返回的数据
      * 
      * params: 记录参数
-     * interface: 记录生成的interface
      * comment: 可能偶尔有文档错误，导致method的comment写到了参数里面，例如zrender.dispose
-     * _pending: 用于临时记录参数信息
      */
     return {
         ...ctx,
@@ -126,8 +137,6 @@ const machine = createMachine({
         // 用于存储params machine中的内容，完成后可以可以在外层删除
         params: {
             params: [],
-            interface: [],
-            _pending: [],
             comment: null,
         },
     };

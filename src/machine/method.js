@@ -1,5 +1,6 @@
 const { createMachine, state, transition, interpret, action, reduce, immediate, guard, invoke } = require('robot3');
 const { machine: paramMachine } = require('./param');
+const { machineFactory: collectTextMachineFactory } = require('./collect_text');
 const { EVENT } = require('../constant');
 
 /**
@@ -20,7 +21,6 @@ const machine = createMachine({
             reduce((ctx, ev) => {
                 // const top = ctx.stack.top();
                 // ev.type === 'done', ev.data实际上是完整的context
-                console.log('target13', ev);
                 const { params, comment } = ev.data;
                 if (params) {
                     ctx.params = params;
@@ -33,19 +33,13 @@ const machine = createMachine({
         ),
     ),
     // 处理返回值
-    return: state(
-        transition(EVENT.OPEN_CODE, 'return_detail'),
-        transition(EVENT.OPEN_A, 'return_detail'),
-    ),
-    return_detail: state(
-        transition(EVENT.FIND_PLAIN_TEXT, 'return_detail',
-            guard((ctx, ev) => !ctx.return),
+    return: invoke(collectTextMachineFactory(EVENT.CLOSE_P),
+        transition('done', 'prepared',
             reduce((ctx, ev) => {
-                ctx.return = ev.value;
+                ctx.ret = ev.data.plain_text_buf;
                 return ctx;
             }),
         ),
-        transition(EVENT.CLOSE_P, 'prepared'),
     ),
     // 例子
     example: state(
@@ -71,7 +65,7 @@ const machine = createMachine({
         ...ctx,
         params: null,
         comment: null,
-        return: null,
+        ret: null,
         example: '',
     };
 });

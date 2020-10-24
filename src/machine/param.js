@@ -22,7 +22,7 @@ const machine = createMachine({
         transition('done', 'handle',
             reduce((/** @type {RootContext & ParamRootContext} */ctx, ev) => {
                 const text = ev.data.plain_text_buf;
-                const param = ctx.params.params.top();
+                const param = ctx.params.top();
                 if (param) {
                     param.push(text);
                 }
@@ -34,7 +34,7 @@ const machine = createMachine({
         // 新的一行
         transition(EVENT.OPEN_TR, 'handle',
             reduce((/** @type {RootContext} */ctx) => {
-                ctx.params.params.push([]);
+                ctx.params.push([]);
                 return ctx;
             }),
         ),
@@ -44,7 +44,7 @@ const machine = createMachine({
         // 全部结束
         transition(EVENT.CLOSE_TABLE, 'finish',
             reduce((ctx, ev) => {
-                const params = ctx.params.params;
+                const params = ctx.params;
                 const parsed = {};
 
                 for (const param of params) {
@@ -135,10 +135,8 @@ const machine = createMachine({
         ...ctx,
         plain_text_buf: '',
         // 用于存储params machine中的内容，完成后可以可以在外层删除
-        params: {
-            params: [],
-            comment: null,
-        },
+        params: [],
+        comment: null,
     };
 });
 

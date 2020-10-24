@@ -45,14 +45,17 @@ describe('method machine', function() {
 <p><a href="#zrenderinitdom-opts">zrender.init</a>。</p>`);
         parser.end();
 
-        // const params = service.context.params;
+        const { params, comment, ret, example } = service.context;
         // expect(params.length).to.equal(1);
         // expect(params[0][0]).to.equal('foo');
         // expect(params[0][1].bar.__name).to.equal('bar');
         // expect(params[0][1].baz.__name).to.equal('baz');
+        expect(comment).to.equal('销毁 ZRender 实例。');
+        expect(ret).to.equal('类型：zrender，zrender 类。');
+        expect(example).to.equal('');
 
-        console.log(util.inspect(service.context, {
-            depth: 6,
-        }));
+        // console.log(util.inspect(service.context, {
+        //     depth: 6,
+        // }));
     });
 });

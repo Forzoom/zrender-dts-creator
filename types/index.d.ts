@@ -12,12 +12,8 @@ interface RootContext {
 }
 
 interface ParamRootContext {
-    params: {
-        params: [];
-        interface: [];
-        _pending: string[][];
-        comment: string | null;
-    };
+    params: string[][];
+    comment: string | null;
 }
 
 interface MethodDef {

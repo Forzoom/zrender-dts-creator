@@ -89,6 +89,10 @@ const machine = createMachine({
     method: invoke(methodMachine,
         transition('done', 'define',
             reduce((ctx, ev) => {
+                def.params = ev.data.params;
+                def.comment = null;
+                def.return = null;
+                def.example = '';
                 const def = ctx.stack.pop();
                 const top = ctx.stack.top();
                 if (top && (top.type === 'class' || top.type === 'static_class')) {

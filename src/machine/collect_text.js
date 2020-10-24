@@ -7,7 +7,6 @@ const machineFactory = function(finishTrigger) {
             transition(EVENT.FIND_PLAIN_TEXT, 'handle',
                 reduce((/** @type {RootContext} */ctx, ev) => {
                     const text = ev.value;
-                    console.log('target13', ctx.plain_text_buf, text);
                     if (text !== '&nbsp;') {
                         ctx.plain_text_buf += ev.value;
                     }
@@ -16,7 +15,6 @@ const machineFactory = function(finishTrigger) {
             ),
             transition(finishTrigger, 'finish',
             reduce((/** @type {RootContext} */ctx, ev) => {
-                console.log('target14', ctx.plain_text_buf);
                 return ctx;
             }),
             ),

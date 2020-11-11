@@ -29,4 +29,22 @@ describe('param machine', function() {
         //     depth: 6,
         // }));
     });
+
+    it('with comment', function() {
+        // 使用robot
+        const service = interpret(machine, service => {}, {});
+        // console.log(service);
+        const { parser } = create(service);
+        parser.write(`
+        <p>销毁 ZRender 实例。</p>
+        <table>
+            <tbody>
+            </tbody>
+        </table>`);
+        parser.end();
+
+        const { comment, params } = service.context;
+        expect(comment).to.equal('销毁 ZRender 实例。');
+        expect(params.length).to.equal(0);
+    });
 });

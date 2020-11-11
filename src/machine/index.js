@@ -12,17 +12,17 @@ const machine = createMachine({
     ),
     prepared: state(
         transition(EVENT.OPEN_H, 'define'),
+        // tip: 在结束之前需要处理一些内容
         transition(EVENT.END, 'before_finish'),
     ),
     define: state(
         // 判断是定义函数
         transition(EVENT.FIND_PLAIN_TEXT, 'method',
-            guard((ctx, ev) => {
-                debug('define1', /^[a-zA-Z0-9.]*\([a-zA-Z0-9, ]*\)$/.test(ev.value.trim()));
+            guard((/** @type {RootContext} */ctx, ev) => {
+                // 在名字中存在括号，认定为函数
                 return /^[a-zA-Z0-9.]*\([a-zA-Z0-9, ]*\)$/.test(ev.value.trim());
             }),
-            reduce((ctx, ev) => {
-                debug('define1_1');
+            reduce((/** @type {RootContext} */ctx, ev) => {
                 const name = ev.value.split('.').pop();
                 ctx.stack.push({
                     type: 'method',
@@ -70,7 +70,6 @@ const machine = createMachine({
         ),
         transition(EVENT.FIND_PLAIN_TEXT, 'prepared',
             guard((ctx, ev) => {
-                debug('define4');
                 const isPropertyLike = /^[a-zA-Z.]*[a-z, ]*$/.test(ev.value);
                 const name = ev.value.split('.').pop();
                 return ['util', 'vector', 'matrix', 'color', 'path'].indexOf(name) >= 0;
@@ -89,11 +88,14 @@ const machine = createMachine({
     method: invoke(methodMachine,
         transition('done', 'define',
             reduce((ctx, ev) => {
-                def.params = ev.data.params;
-                def.comment = null;
-                def.return = null;
-                def.example = '';
                 const def = ctx.stack.pop();
+                const { params, comment, ret, example } = ev.data;
+                def.params = params;
+                def.comment = comment;
+                def.return = ret;
+                def.example = example;
+
+                // tip: 可能会归属到另外一个层级之中
                 const top = ctx.stack.top();
                 if (top && (top.type === 'class' || top.type === 'static_class')) {
                     if (!top.methods) {
